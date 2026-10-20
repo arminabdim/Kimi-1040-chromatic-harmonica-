@@ -1,0 +1,13 @@
+{
+  "name": "Kimi-1040 Chromatic Harmonica Tab Converter",
+  "short_name": "Kimi-1040",
+  "description": "Convert song notes to numeric tablature for the QI MEI 1040 chromatic harmonica; PDF/MIDI/MP3 with synced lyrics. تبدیل نت به تبلچر هارمونیکای کروماتیک",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f6fa",
+  "theme_color": "#0e6ba8",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
