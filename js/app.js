@@ -371,8 +371,12 @@
       var f = e.target.files[0];
       if (!f) return;
       try {
-        var parsed = K.midiparse.parseMidi(await f.arrayBuffer());
-        var song = K.melody.songFromMidi(parsed, { title: f.name.replace(/\.midi?$/i, ''), source: 'file', sourceDetail: f.name });
+        var buf = await f.arrayBuffer();
+        var base = f.name.replace(/\.(midi?|abc|xml|mxl|musicxml)$/i, '');
+        var song;
+        if (/\.abc$/i.test(f.name)) song = K.abc.parseABC(new TextDecoder().decode(buf), { title: base, source: 'file', sourceDetail: f.name });
+        else if (/\.(xml|mxl|musicxml)$/i.test(f.name)) song = await K.musicxml.parseBytes(buf, { title: base, source: 'file', sourceDetail: f.name });
+        else song = K.melody.songFromMidi(K.midiparse.parseMidi(buf), { title: base, source: 'file', sourceDetail: f.name });
         if (!song.events.some(function (x) { return x.type === 'note'; })) { status(t('errNoMelody'), 'err'); return; }
         setSong(song);
         status(t('loaded') + ': ' + song.title, 'ok');
