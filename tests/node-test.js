@@ -2,6 +2,9 @@
 const path = require('path');
 const root = p => path.join(__dirname, '..', p);
 global.window = undefined;
+/* DOM shim for MusicXML tests */
+const { JSDOM: JD } = require('jsdom');
+global.DOMParser = new JD('<html></html>').window.DOMParser;
 ['js/music.js', 'js/harp.js', 'js/midiparse.js', 'js/melody.js', 'js/lyrics.js', 'js/library.js', 'js/synth.js', 'js/midiwrite.js', 'js/exportmp3.js']
   .forEach(f => require(root(f)));
 const K = globalThis.K1040;
@@ -101,5 +104,96 @@ ok(mp3.length > 20000, 'mp3 size sane (' + mp3.length + ' bytes)');
 const lrc = K.exportmp3.buildLRC([{ t: 65.25, text: 'سلام دنیا' }]);
 ok(lrc.startsWith('[01:05.25] سلام دنیا'), 'lrc format: ' + lrc.trim());
 
-console.log(fails ? '\n' + fails + ' FAILURES' : '\nALL TESTS PASSED');
-process.exit(fails ? 1 : 0);
+console.log('abc parser');
+require(root('js/abc.js'));
+const abcSong = K.abc.parseABC([
+  'X:1', 'T:Test Tune', 'M:4/4', 'L:1/8', 'Q:1/4=100', 'K:G',
+  '"C"G2 AB c2 BA | G4 z2 d2 | c4 B4 | A6 z2 |]'
+].join('\n'), {});
+ok(abcSong.tempo === 100 && abcSong.ts[0] === 4, 'abc header parsed');
+ok(abcSong.events[0].midi === (3 + 1) * 12 + 7, 'K:G first note G3=' + abcSong.events[0].midi);
+ok(abcSong.events[1].midi === (3 + 1) * 12 + 9, 'A3 after key sig');
+ok(abcSong.events.some(e => e.type === 'rest'), 'abc rests parsed');
+ok(K.abc.isABC('X:1\nK:C\nC4'), 'isABC detects');
+const abcSong2 = K.abc.parseABC(['X:1', 'M:6/8', 'L:1/8', 'Q:3/8=90', 'K:Am', 'V:1', 'A,2 B, C2 |', 'V:2', 'A,,4 |'].join('\n'), {});
+ok(abcSong2.events[0].midi === 45, 'octave comma A, = A2? got ' + abcSong2.events[0].midi);
+ok(abcSong2.tempo === 90 * 1.5, 'compound tempo converted');
+
+console.log('library expansion');
+require(root('js/library-abc.js'));
+const libList = K.library.list();
+ok(libList.length >= 20, 'library has ' + libList.length + ' songs');
+let libOk = 0;
+libList.forEach(function (s) {
+  try {
+    const song = K.library.get(s.id);
+    const notes = song.events.filter(e => e.type === 'note');
+    if (notes.length >= 8 && song.tempo > 0) libOk++;
+  } catch (e) { console.log('   lib err ' + s.id + ': ' + e.message); }
+});
+ok(libOk === libList.length, 'all ' + libOk + ' library songs parse to usable melodies');
+const gr = K.library.get('greensleeves');
+ok(gr.events.filter(e => e.type === 'note').length > 30, 'greensleeves melody loaded');
+
+console.log('musicxml parser');
+require(root('js/musicxml.js'));
+const mxml = '<?xml version="1.0"?><score-partwise version="3.1"><work><work-title>Test</work-title></work><part-list><score-part id="P1"></score-part></part-list><part id="P1">' +
+  '<measure number="1"><attributes><divisions>2</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>' +
+  '<note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><lyric><text>la</text></lyric></note>' +
+  '<note><pitch><step>D</step><alter>1</alter><octave>5</octave></pitch><duration>1</duration></note>' +
+  '<note><rest></rest><duration>1</duration></note>' +
+  '<note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration></note></measure></part></score-partwise>';
+const mx = K.musicxml.parseMusicXML(mxml, {});
+ok(mx.events.length === 4 && mx.events[0].midi === 72, 'musicxml notes');
+ok(mx.events[1].midi === 75, 'musicxml alter D#5');
+ok(mx.events[0].lyric === 'la', 'musicxml lyric');
+ok(mx.ts[0] === 4 && mx.events[3].beats === 2, 'musicxml divisions->beats');
+
+console.log('search ranking & types');
+require(root('js/search.js'));
+const fake = [
+  { title: 'Ey Iran instrumental', type: 'pdf', source: 'archive.org', size: 900000 },
+  { title: 'Ey Iran', type: 'midi', source: 'archive.org', size: 12000 },
+  { title: 'Ey Iran arrangement', type: 'abc', source: 'github.com/x/y', size: 900 },
+  { title: 'Random other song', type: 'midi', source: 'commons.wikimedia.org', size: 40000 }
+];
+const ranked = K.search.rank(fake, ['ey iran']);
+ok(ranked[0].type === 'midi' && ranked[0].title === 'Ey Iran', 'exact midi title ranks first');
+ok(ranked[ranked.length - 1].title === 'Random other song', 'irrelevant last');
+ok(K.search.typeOf('a.MID') === 'midi' && K.search.typeOf('x.pdf') === 'pdf' && K.search.typeOf('y.mxl') === 'mxl' && K.search.typeOf('z.abc') === 'abc', 'typeOf extensions');
+ok(K.search.ALIASES['ایران'] === 'Ey Iran', 'persian alias table');
+
+(async function () {
+  console.log('musicxml zipped (.mxl)');
+  function crc32(buf) {
+    let c, table = crc32.t || (crc32.t = (() => { const t = []; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })());
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) crc = table[(crc ^ buf[i]) & 255] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  async function makeMxl(xml) {
+    const name = Buffer.from('score.xml');
+    const raw = Buffer.from(xml, 'utf8');
+    const cs = new CompressionStream('deflate-raw');
+    const comp = Buffer.from(await new Response(new Blob([raw]).stream().pipeThrough(cs)).arrayBuffer());
+    const crc = crc32(raw);
+    const lh = Buffer.alloc(30);
+    lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt16LE(8, 8);
+    lh.writeUInt32LE(crc, 14); lh.writeUInt32LE(comp.length, 18); lh.writeUInt32LE(raw.length, 22);
+    lh.writeUInt16LE(name.length, 26); lh.writeUInt16LE(0, 28);
+    const ch = Buffer.alloc(46);
+    ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt16LE(8, 10);
+    ch.writeUInt32LE(crc, 16); ch.writeUInt32LE(comp.length, 20); ch.writeUInt32LE(raw.length, 24);
+    ch.writeUInt16LE(name.length, 28); ch.writeUInt32LE(0, 42);
+    const eocd = Buffer.alloc(22);
+    eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(1, 8); eocd.writeUInt16LE(1, 10);
+    eocd.writeUInt32LE(ch.length + name.length, 12); eocd.writeUInt32LE(30 + name.length + comp.length, 16);
+    return Buffer.concat([lh, name, comp, ch, name, eocd]);
+  }
+  const mxlBytes = await makeMxl(mxml);
+  const mx2 = await K.musicxml.parseBytes(new Uint8Array(mxlBytes), {});
+  ok(mx2.events.length === 4 && mx2.events[2].type === 'rest', 'mxl zip inflate + parse');
+
+  console.log(fails ? '\n' + fails + ' FAILURES' : '\nALL TESTS PASSED');
+  process.exit(fails ? 1 : 0);
+})();

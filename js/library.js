@@ -81,11 +81,32 @@
     lyricsText: 'Mary had a little lamb, little lamb, little lamb,\nMary had a little lamb, its fleece was white as snow.'
   }));
 
+  /* ---- ABC-based entries (generated module, traditional/PD tunes) ---- */
+  var abcCache = {};
+  function abcList() { return (K.libraryABC || []); }
+  function abcTitleEn(e) { var m = /^T:\s*(.*)$/m.exec(e.abc || ''); return m ? m[1].trim() : e.id; }
+  function abcGet(id) {
+    if (abcCache[id]) return JSON.parse(JSON.stringify(abcCache[id]));
+    var e = abcList().filter(function (x) { return x.id === id; })[0];
+    if (!e) return null;
+    var song = K.abc.parseABC(e.abc, { source: 'library', sourceDetail: 'abc:' + id });
+    song.id = id;
+    song.title = e.title || song.title;
+    song.titleEn = abcTitleEn(e);
+    song.tags = e.tags || '';
+    abcCache[id] = song;
+    return JSON.parse(JSON.stringify(song));
+  }
+
   K.library = {
-    list: function () { return SONGS.map(function (s) { return { id: s.id, title: s.title, titleEn: s.titleEn }; }); },
+    list: function () {
+      return SONGS.map(function (s) { return { id: s.id, title: s.title, titleEn: s.titleEn }; })
+        .concat(abcList().map(function (e) { return { id: e.id, title: e.title, titleEn: abcTitleEn(e) }; }));
+    },
     get: function (id) {
       var s = SONGS.filter(function (x) { return x.id === id; })[0];
-      return s ? JSON.parse(JSON.stringify(s)) : null;
+      if (s) return JSON.parse(JSON.stringify(s));
+      return abcGet(id);
     }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

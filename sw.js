@@ -2,7 +2,7 @@
 var CACHE = 'kimi1040-v1';
 var ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg',
   'css/style.css', 'css/fonts.css',
-  'js/music.js', 'js/harp.js', 'js/midiparse.js', 'js/melody.js', 'js/lyrics.js',
+  'js/music.js', 'js/abc.js', 'js/musicxml.js', 'js/db.js', 'js/library-abc.js', 'js/harp.js', 'js/midiparse.js', 'js/melody.js', 'js/lyrics.js',
   'js/library.js', 'js/search.js', 'js/synth.js', 'js/midiwrite.js', 'js/exportmp3.js',
   'js/exportpdf.js', 'js/i18n.js', 'js/app.js',
   'vendor/jspdf.umd.min.js', 'vendor/html2canvas.min.js', 'vendor/lame.min.js'];

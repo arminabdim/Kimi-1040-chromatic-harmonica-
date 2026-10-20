@@ -2,7 +2,7 @@
 (function (G) {
   var K = (G.K1040 = G.K1040 || {});
   var $ = function (id) { return document.getElementById(id); };
-  var state = { song: null, tab: [], transpose: 0, audioCtx: null, src: null, busy: false };
+  var state = { song: null, tab: [], transpose: 0, audioCtx: null, src: null, busy: false, results: [] };
 
   function t(k) { return K.i18n.t(k); }
   function status(msg, cls) {
@@ -212,39 +212,140 @@
     });
   }
 
+  function fmtSize(b) {
+    if (!b) return '';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return Math.round(b / 1024) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function renderResults(res) {
+    state.results = res.results;
+    var box = $('results');
+    box.innerHTML = '';
+    $('resQueries').textContent = res.queries && res.queries.length > 1 ? t('searchedAs') + ' ' + res.queries.join(' | ') : '';
+    res.results.forEach(function (r, idx) {
+      var d = document.createElement('div');
+      d.className = 'res-item';
+      var isBest = res.best && res.best.result === r;
+      d.innerHTML =
+        '<span class="res-type t-' + r.type + '">' + String(r.type).toUpperCase() + '</span> ' +
+        '<span class="res-src">' + esc(r.source) + '</span> ' +
+        '<b class="res-title">' + esc(r.title) + '</b> ' +
+        '<span class="res-meta">' + fmtSize(r.size) + (r.sim != null ? ' · ' + Math.round(r.sim * 100) + '%' : '') + '</span>' +
+        (isBest ? ' <span class="res-best">★ ' + t('bestPick') + '</span>' : '') +
+        '<div class="res-actions">' +
+        (r.type !== 'pdf' ? '<button class="mini" data-act="load" data-i="' + idx + '">' + t('dbLoad') + '</button>' : '') +
+        '<button class="mini" data-act="save" data-i="' + idx + '">' + t('saveVault') + '</button>' +
+        (r.type === 'pdf' ? '<button class="mini" data-act="view" data-i="' + idx + '">' + t('viewBtn') + '</button>' : '') +
+        '</div>';
+      box.appendChild(d);
+    });
+    box.querySelectorAll('button[data-act]').forEach(function (b) {
+      b.onclick = async function () {
+        var r = state.results[+b.getAttribute('data-i')];
+        var act = b.getAttribute('data-act');
+        if (act === 'load') {
+          status(t('trying') + ' ' + r.title, 'busy');
+          try {
+            var c = await K.search.loadCandidate(r);
+            if (c.pdfOnly) { status(t('pdfOnly'), 'err'); return; }
+            setSong(c.song);
+            status(t('loaded') + ': ' + c.song.title + ' (' + t('savedVault') + ')', 'ok');
+            renderDB();
+          } catch (e) { status(t('errNet') + ' (' + e.message + ')', 'err'); }
+        } else if (act === 'save') {
+          try {
+            if (r.type === 'pdf' || true) {
+              var rr = await fetch(r.url);
+              var buf = await rr.arrayBuffer();
+              await K.db.put({ key: r.url, title: r.title, source: r.source, type: r.type, name: r.fileName || r.title, size: buf.byteLength, bytes: buf });
+              status(t('savedVault') + ': ' + r.title, 'ok');
+              renderDB();
+            }
+          } catch (e) { status(t('errNet') + ' (' + e.message + ')', 'err'); }
+        } else if (act === 'view') {
+          try {
+            var rec = await K.db.get(r.url);
+            var blob;
+            if (rec && rec.bytes) blob = new Blob([rec.bytes], { type: 'application/pdf' });
+            else blob = new Blob([await (await fetch(r.url)).arrayBuffer()], { type: 'application/pdf' });
+            window.open(URL.createObjectURL(blob), '_blank');
+          } catch (e) { status(t('errNet'), 'err'); }
+        }
+      };
+    });
+  }
+
   async function doSearch() {
     var q = $('query').value.trim();
     if (!q || state.busy) return;
     state.busy = true;
     status(t('searching'), 'busy');
     $('results').innerHTML = '';
+    $('resQueries').textContent = '';
     try {
       var res = await K.search.findBest(q, function (kind, payload) {
         if (kind === 'found') status(t('foundN') + ' ' + payload, 'busy');
+        else if (kind === 'searching') status(t('searching') + ' «' + payload + '»', 'busy');
         else status(t('trying') + ' ' + payload, 'busy');
       });
-      if (!res.best) { status(t('errNoResults'), 'err'); state.busy = false; return; }
-      res.alternatives.forEach(function (c) {
-        var d = document.createElement('div');
-        d.className = 'res-item';
-        d.innerHTML = '<span class="res-src">' + esc(c.result.source) + '</span> <b>' + esc(c.result.title) + '</b> ' +
-          '<span class="res-meta">' + c.song.events.filter(function (e) { return e.type === 'note'; }).length + ' ' + t('notes') + '</span> ' +
-          (c === res.best ? '<span class="res-best">★</span>' : '<button class="mini" data-pick="' + esc(c.result.id || c.result.title) + '">' + t('pick') + '</button>');
-        d._cand = c;
-        $('results').appendChild(d);
-      });
-      $('results').querySelectorAll('button[data-pick]').forEach(function (b) {
-        b.onclick = function () {
-          var item = Array.prototype.find.call($('results').children, function (ch) { return ch.contains(b); });
-          if (item && item._cand) setSong(item._cand.song);
-        };
-      });
-      setSong(res.best.song);
-      status(t('loaded') + ': ' + res.best.song.title, 'ok');
+      renderResults(res);
+      if (res.best) {
+        setSong(res.best.song);
+        status(t('loaded') + ': ' + res.best.song.title, 'ok');
+      } else if (res.results.length) {
+        status(t('noParseable'), 'err');
+      } else {
+        status(t('errNoResults'), 'err');
+      }
     } catch (e) {
       status(t('errNet') + ' (' + e.message + ')', 'err');
     }
     state.busy = false;
+  }
+
+  /* ---------- offline vault (internal database) ---------- */
+  async function renderDB() {
+    var box = $('dbList');
+    if (!box) return;
+    var rows = await K.db.all();
+    box.innerHTML = '';
+    if (!rows.length) { box.innerHTML = '<div class="db-empty">' + t('dbEmpty') + '</div>'; return; }
+    rows.forEach(function (r) {
+      var d = document.createElement('div');
+      d.className = 'res-item';
+      d.innerHTML = '<span class="res-type t-' + r.type + '">' + String(r.type).toUpperCase() + '</span> ' +
+        '<b class="res-title">' + esc(r.title) + '</b> ' +
+        '<span class="res-meta">' + fmtSize(r.size || (r.bytes && r.bytes.byteLength)) + ' · ' + new Date(r.added || Date.now()).toLocaleDateString(K.i18n.lang === 'fa' ? 'fa-IR' : 'en-GB') + '</span>' +
+        '<div class="res-actions">' +
+        (r.type !== 'pdf' ? '<button class="mini" data-act="load">' + t('dbLoad') + '</button>' : '<button class="mini" data-act="view">' + t('viewBtn') + '</button>') +
+        '<button class="mini" data-act="file">' + t('dbFile') + '</button>' +
+        '<button class="mini" data-act="del">' + t('dbDel') + '</button>' +
+        '</div>';
+      d.querySelector('[data-act=load]') && (d.querySelector('[data-act=load]').onclick = async function () {
+        try {
+          var song;
+          if (r.type === 'midi') song = K.melody.songFromMidi(K.midiparse.parseMidi(r.bytes), { title: r.title, source: 'vault', sourceDetail: r.name });
+          else if (r.type === 'abc') song = K.abc.parseABC(new TextDecoder().decode(r.bytes), { title: r.title, source: 'vault', sourceDetail: r.name });
+          else song = await K.musicxml.parseBytes(r.bytes, { title: r.title, source: 'vault', sourceDetail: r.name });
+          setSong(song);
+          status(t('loaded') + ': ' + song.title, 'ok');
+        } catch (e) { status(t('errNoMelody') + ' (' + e.message + ')', 'err'); }
+      });
+      var vb = d.querySelector('[data-act=view]');
+      if (vb) vb.onclick = function () { window.open(URL.createObjectURL(new Blob([r.bytes], { type: 'application/pdf' })), '_blank'); };
+      d.querySelector('[data-act=file]').onclick = function () {
+        download(r.bytes, (r.name || r.title || 'file').replace(/[\\/:*?"<>|]/g, '_'), r.type === 'pdf' ? 'application/pdf' : 'application/octet-stream');
+        status(t('done'), 'ok');
+      };
+      d.querySelector('[data-act=del]').onclick = async function () {
+        await K.db.del(r.key);
+        renderDB();
+        status(t('done'), 'ok');
+      };
+      box.appendChild(d);
+    });
   }
 
   /* ---------- init ---------- */
@@ -257,6 +358,7 @@
         document.querySelectorAll('.tabpane').forEach(function (x) { x.hidden = true; });
         b.classList.add('on');
         $(b.getAttribute('data-pane')).hidden = false;
+        if (b.getAttribute('data-pane') === 'paneDB') renderDB();
       };
     });
     $('searchBtn').onclick = doSearch;
@@ -277,11 +379,18 @@
       } catch (err) { status(t('errNoMelody') + ' (' + err.message + ')', 'err'); }
     };
     $('pasteLoad').onclick = function () {
-      var song = K.melody.parsePaste($('pasteArea').value);
+      var txt = $('pasteArea').value;
+      var song;
+      try {
+        if (K.abc.isABC(txt)) song = K.abc.parseABC(txt, { source: 'paste', sourceDetail: 'abc' });
+        else if (/<score-partwise/.test(txt)) song = K.musicxml.parseMusicXML(txt, { source: 'paste', sourceDetail: 'musicxml' });
+        else song = K.melody.parsePaste(txt);
+      } catch (e) { status(t('errNoMelody') + ' (' + e.message + ')', 'err'); return; }
       if (!song.events.length) { status(t('errNoMelody'), 'err'); return; }
       setSong(song);
       status(t('loaded'), 'ok');
     };
+    $('dbRefresh').onclick = renderDB;
     $('convert').onclick = convert;
     $('transpose').onchange = convert;
     $('minSlide').onchange = convert;
@@ -304,5 +413,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
   }
-  K.app = { state: state, convert: convert, setSong: setSong };
+  K.app = { state: state, convert: convert, setSong: setSong, renderDB: renderDB, doSearch: doSearch };
 })(typeof window !== 'undefined' ? window : globalThis);

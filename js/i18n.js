@@ -31,6 +31,11 @@
       langBtn: 'English', preview: 'پیش‌نمایش تبلچر', hole: 'خانه', breath: 'دم/مکش', slide: 'اسلایدر',
       note: 'نت', dur: 'کشش', lyric: 'خوانش', bar: 'میزان',
       offline: 'این برنامه کاملاً آفلاین هم کار می‌کند (به‌جز جستجوی اینترنتی).',
+      searchedAs: 'جستجو با عبارت‌های:', bestPick: 'بهترین انتخاب', saveVault: 'ذخیره در گنجینه',
+      savedVault: 'در گنجینهٔ آفلاین ذخیره شد', viewBtn: 'نمایش', noParseable: 'نتیجه‌هایی پیدا شد ولی هیچ‌کدوم نت قابل‌تبدیل نداشت؛ دکمهٔ «بارگذاری» یا «ذخیره» را برای نتایج دیگر امتحان کنید.',
+      pdfOnly: 'این مورد PDF است و نت قابل استخراج ندارد؛ می‌توانید ذخیره یا تماشا کنید.',
+      dbTab: 'گنجینهٔ آفلاین من', dbEmpty: 'هنوز چیزی ذخیره نکرده‌اید. از بخش جستجو، فایلی را «ذخیره در گنجینه» کنید تا همیشه آفلاین در دسترس باشد.',
+      dbLoad: 'بارگذاری', dbFile: 'دریافت فایل', dbDel: 'حذف', dbRefresh: 'به‌روزرسانی',
       deviceNote: 'اجرا روی همهٔ دستگاه‌ها: موبایل، تبلت، رایانه — فقط یک مرورگر کافی است.'
     },
     en: {
@@ -62,6 +67,11 @@
       langBtn: 'فارسی', preview: 'Tab preview', hole: 'Hole', breath: 'Breath', slide: 'Slide',
       note: 'Note', dur: 'Dur.', lyric: 'Lyric', bar: 'Bar',
       offline: 'The app also works fully offline (except internet search).',
+      searchedAs: 'Searched as:', bestPick: 'best pick', saveVault: 'Save to vault',
+      savedVault: 'Saved to offline vault', viewBtn: 'View', noParseable: 'Results found but none had convertible notes; try Load/Save on other results.',
+      pdfOnly: 'This item is a PDF (no extractable notes); you can save or view it.',
+      dbTab: 'My offline vault', dbEmpty: 'Nothing saved yet. Use "Save to vault" on any search result to keep it offline forever.',
+      dbLoad: 'Load', dbFile: 'Get file', dbDel: 'Delete', dbRefresh: 'Refresh',
       deviceNote: 'Runs on every device: phone, tablet, computer — just a browser.'
     }
   };
