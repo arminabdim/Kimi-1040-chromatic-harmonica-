@@ -23,14 +23,22 @@ converts them to numeric tab → exports **PDF + MIDI + MP3** with **time-synced
 
 ## ورودی نت / Note input
 
-1. **جستجو در اینترنت / Internet search:** نام آهنگ به هر زبانی. جستجو در آرشیو MIDI اینترنت
-   (archive.org) و Wikimedia Commons؛ چند نامزد تجزیه می‌شود و **بهترین/کامل‌ترین** (بیشترین نت،
-   تک‌صدایی‌تر، مناسب‌ترین گستره) خودکار انتخاب می‌شود؛ بقیهٔ نتایج برای انتخاب دستی فهرست می‌شوند.
-   Search any song name in any language across the Internet Archive MIDI collection and Wikimedia
-   Commons; several candidates are parsed and the **best/most complete** one is auto-picked.
-2. **کتابخانهٔ داخلی / Built-in library:** چند آهنگ آفلاین با متن سینک‌شده.
-3. **فایل MIDI / MIDI file:** آپلود از دستگاه؛ ملودی اصلی خودکار استخراج می‌شود.
-4. **تایپ نت / Type notes:** مثلاً / e.g. `T:=110 M:=4/4  E4 E4 F4:q G4/e R |`
+1. **جستجو در اینترنت / Internet search:** نام آهنگ به هر زبانی. پرس‌وجوی فارسی به‌طور خودکار
+   با عنوان انگلیسی هم جستجو می‌شود (ویکی‌پدیا/جدول نام‌های مستعار). سه موتور: Internet Archive،
+   Wikimedia Commons و مخازن نت آزاد گیت‌هاب — با فال‌بک JSONP. نتایج شامل **MIDI / PDF / ABC /
+   MusicXML(.xml/.mxl)** بر اساس ارتباط و دقت و نوع فایل رتبه‌بندی می‌شوند؛ بهترین نسخهٔ قابل‌تبدیل
+   خودکار بارگذاری می‌شود و بقیه با دکمه‌های «بارگذاری / ذخیره / نمایش» در دسترس‌اند.
+   Any-language song search with automatic Persian⇄English query expansion; three engines
+   (Internet Archive, Wikimedia Commons, open GitHub score repos) with JSONP fallback; results
+   include MIDI/PDF/ABC/MusicXML ranked by relevance+accuracy+type; best convertible version
+   auto-loads, the rest offer Load / Save / View buttons.
+2. **گنجینهٔ آفلاین / Offline vault:** هر نتیجهٔ دانلودشده در IndexedDB داخلی ذخیره می‌شود و
+   برای همیشه بدون اینترنت قابل بارگذاری/دریافت/حذف است.
+   Every downloaded result is stored in the internal IndexedDB vault for permanent offline use.
+3. **کتابخانهٔ داخلی / Built-in library:** ۲۳ آهنگ آفلاین (folk/classical/ایرانی‌پسند) با پارسر ABC.
+   23 offline songs parsed from embedded ABC notation.
+4. **فایل MIDI / MusicXML / MIDI file:** آپلود از دستگاه (.mid/.midi/.xml/.mxl)؛ ملودی اصلی خودکار استخراج می‌شود.
+5. **تایپ نت / Type notes:** نت‌های نام‌دار، ABC کامل یا MusicXML — مثلاً / e.g. `T:=110 M:=4/4  E4 E4 F4:q G4/e R |`
 
 ## چیدمان نت روی ساز / Note layout (QI MEI 1040, key of C, solo tuning)
 

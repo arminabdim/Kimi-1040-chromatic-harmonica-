@@ -31,6 +31,7 @@
       <button class="tabbtn" data-pane="paneLib" data-i18n="tabLibrary">کتابخانهٔ داخلی</button>
       <button class="tabbtn" data-pane="paneFile" data-i18n="tabFile">فایل MIDI</button>
       <button class="tabbtn" data-pane="panePaste" data-i18n="tabPaste">تایپ نت‌ها</button>
+      <button class="tabbtn" data-pane="paneDB" data-i18n="dbTab">گنجینهٔ آفلاین من</button>
     </nav>
 
     <div class="tabpane" id="paneSearch">
@@ -40,6 +41,7 @@
         <button id="searchBtn" class="primary" data-i18n="searchBtn">جستجوی بهترین نسخه</button>
       </div>
       <div id="results" class="results"></div>
+      <div id="resQueries" class="res-queries"></div>
     </div>
 
     <div class="tabpane" id="paneLib" hidden>
@@ -52,7 +54,12 @@
 
     <div class="tabpane" id="paneFile" hidden>
       <label data-i18n="fileHint">فایل MIDI:</label>
-      <input id="midiFile" type="file" accept=".mid,.midi,audio/midi,audio/x-midi">
+      <input id="midiFile" type="file" accept=".mid,.midi,.abc,.xml,.mxl,.musicxml,audio/midi,audio/x-midi">
+    </div>
+
+    <div class="tabpane" id="paneDB" hidden>
+      <div id="dbList" class="results"></div>
+      <button id="dbRefresh" class="mini" data-i18n="dbRefresh">به‌روزرسانی</button>
     </div>
 
     <div class="tabpane" id="panePaste" hidden>
@@ -102,10 +109,14 @@
 <script src="vendor/html2canvas.min.js"></script>
 <script src="vendor/lame.min.js"></script>
 <script src="js/music.js"></script>
+<script src="js/abc.js"></script>
+<script src="js/musicxml.js"></script>
+<script src="js/db.js"></script>
 <script src="js/harp.js"></script>
 <script src="js/midiparse.js"></script>
 <script src="js/melody.js"></script>
 <script src="js/lyrics.js"></script>
+<script src="js/library-abc.js"></script>
 <script src="js/library.js"></script>
 <script src="js/search.js"></script>
 <script src="js/synth.js"></script>

@@ -131,3 +131,11 @@ fieldset.opts legend { color: var(--mut); font-size: 13px; padding: 0 6px; }
 .sh-barline { width: 2px; background: #55677a; }
 .sh-barno { font-size: 9.5px; color: #93a3b3; }
 .sh-footer { position: absolute; bottom: 14px; left: 44px; right: 44px; font-size: 10px; color: #a5b1be; display: flex; justify-content: space-between; }
+
+.res-type { border-radius: 6px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; color: #fff; letter-spacing: .4px; }
+.t-midi { background: #6a4fc7; } .t-pdf { background: #b3261e; } .t-abc { background: #1a7f4b; }
+.t-xml, .t-mxl { background: #0e6ba8; } .t-item { background: #546e7a; }
+.res-actions { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.res-queries { font-size: 11px; color: #93a3b3; margin-top: 6px; }
+.res-title { font-weight: 600; }
+.db-empty { color: var(--mut); font-size: 13px; padding: 8px; }

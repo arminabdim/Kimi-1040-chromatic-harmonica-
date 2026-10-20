@@ -79,6 +79,33 @@ setTimeout(() => {
   ok(t4.tab === '-3', 'twinkle A4 -> draw 3 (got ' + t4.tab + ')');
   ok(t4.lyric === 'lit', 'lyric synced to note in tab');
 
-  console.log(fails ? '\n' + fails + ' DOM FAILURES' : '\nALL DOM TESTS PASSED');
-  process.exit(fails ? 1 : 0);
+  /* library expansion + ABC songs in page */
+  ok(K.library.list().length >= 20, 'page library has ' + K.library.list().length + ' songs');
+  K.app.setSong(K.library.get('greensleeves'));
+  ok(K.app.state.tab.length > 20 && K.app.state.tab.some(x => x.fing), 'abc-library song converts to tab');
+  ok(doc.getElementById('libSel').options.length >= 20, 'library select populated');
+
+  /* offline vault (memory fallback in jsdom) */
+  (async function () {
+    await K.db.put({ key: 'k1', title: 'vault test', type: 'midi', bytes: new Uint8Array([1, 2, 3]).buffer });
+    const all = await K.db.all();
+    ok(all.length === 1 && all[0].title === 'vault test', 'vault put/all');
+    const rec = await K.db.get('k1');
+    ok(rec && rec.bytes.byteLength === 3, 'vault get bytes');
+    await K.db.del('k1');
+    ok((await K.db.all()).length === 0, 'vault delete');
+
+    /* vault pane UI */
+    doc.querySelector('[data-pane=paneDB]').click();
+    ok(doc.getElementById('paneDB').hidden === false, 'vault pane opens');
+    await new Promise(r => setTimeout(r, 80));
+    ok(/ذخیره|Nothing saved/.test(doc.getElementById('dbList').textContent), 'vault empty message shown');
+
+    /* search plumbing present */
+    ok(typeof K.search.findBest === 'function' && typeof K.search.githubCatalog === 'function', 'search engines wired');
+    ok(typeof K.abc.parseABC === 'function' && typeof K.musicxml.parseBytes === 'function', 'abc/musicxml loaded in page');
+
+    console.log(fails ? '\n' + fails + ' DOM FAILURES' : '\nALL DOM TESTS PASSED');
+    process.exit(fails ? 1 : 0);
+  })();
 }, 2500);
